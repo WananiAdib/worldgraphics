@@ -19,6 +19,8 @@
 #include <glm/mat4x4.hpp> // glm::mat4
 #include <glm/gtc/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale, glm::perspective
 #include <glm/gtc/type_ptr.hpp>
+#include <json.hpp>
+using json = nlohmann::json;
 
 #include <iostream>
 #include <fstream>
@@ -45,6 +47,8 @@ std::vector<glm::vec3> VN(3);
 std::vector<glm::ivec3> T(3);
 // Contains the texture posions
 std::vector<glm::vec2> TX(3);
+// Contains values for countries
+std::vector<glm::vec2> VC(3);
 
 std::vector<float> pixels;
 
@@ -365,8 +369,26 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 }
 
+void readGeoJSON(std::string filename,std::vector<glm::vec2>& vertex) {
+    std::ifstream i(filename);
+    if (i.fail()) {
+        std::cout << "Could not open file: " << filename << std::endl;
+    }
+    json j, coord;
+    i >> j;
+    coord = j["features"][138]["geometry"]["coordinates"][0];
+
+    for (auto& co : coord) {
+        vertex.push_back(glm::vec2(co[0].get<float>(),co[1].get<float>()));
+    }
+
+    // write prettified JSON to another file
+    std::ofstream o("pretty.json");
+    o << std::setw(4) << coord << std::endl;
+}
 int main(void)
 {
+
     #pragma region // Window creation and stuff
     GLFWwindow* window;
 
@@ -451,6 +473,10 @@ int main(void)
     IndexBuffer.update(T);
 
     // load PPM image file
+    readGeoJSON("../data/WB_Boundaries_GeoJSON_lowres/WB_countries_Admin0_lowres.geojson", VC);
+    for (auto& v : VC) {
+        std::cout << v[0] << " " << v[1] << std::endl;
+    }
     ImageRGB image;
     bool imageAvailable = loadPPM(image, "../data/land_shallow_topo_2048.ppm");
     if (imageAvailable) {
