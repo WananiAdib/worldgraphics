@@ -19,6 +19,8 @@
 #include <glm/mat4x4.hpp> // glm::mat4
 #include <glm/gtc/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale, glm::perspective
 #include <glm/gtc/type_ptr.hpp>
+
+#include <earcut.hpp>
 #include <json.hpp>
 using json = nlohmann::json;
 
@@ -39,6 +41,12 @@ BufferObject TBO;
 // VertexBufferObject wrapper
 BufferObject IndexBuffer;
 
+
+// Types def
+using Coord = double;
+using N = uint32_t;
+using Point = std::array<Coord, 2>;
+
 // Contains the vertex positions
 std::vector<glm::vec3> V(3);
 // Contains the vertex positions
@@ -49,6 +57,8 @@ std::vector<glm::ivec3> T(3);
 std::vector<glm::vec2> TX(3);
 // Contains values for countries
 std::vector<glm::vec2> VC(3);
+std::vector<glm::ivec3> I(3);
+std::vector<Point> vertices;
 
 std::vector<float> pixels;
 
@@ -369,7 +379,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 }
 
-void readGeoJSON(std::string filename,std::vector<glm::vec2>& vertex) {
+void readGeoJSON(std::string filename,std::vector<Point>& vertex) {
     std::ifstream i(filename);
     if (i.fail()) {
         std::cout << "Could not open file: " << filename << std::endl;
@@ -379,12 +389,24 @@ void readGeoJSON(std::string filename,std::vector<glm::vec2>& vertex) {
     coord = j["features"][138]["geometry"]["coordinates"][0];
 
     for (auto& co : coord) {
-        vertex.push_back(glm::vec2(co[0].get<float>(),co[1].get<float>()));
+        vertex.push_back({co[0].get<float>(),co[1].get<float>()});
     }
 
     // write prettified JSON to another file
     std::ofstream o("pretty.json");
     o << std::setw(4) << coord << std::endl;
+}
+void countriesRearrange(std::vector<Point>& vertex,std::vector<glm::vec2>& V, std::vector<glm::ivec3> indices ) {
+   std::vector<std::vector<Point>> polygon;
+   polygon.push_back(vertex);
+   std::vector<N> indice = mapbox::earcut<N>(polygon);
+   for (int i=0; i<indice.size(); i+= 3) {
+        indices.push_back(glm::ivec3(indice[i], indice[i+1], indice[i+2]));
+   }
+   for (int i=0; i<vertex.size(); i++) {
+        V.push_back(glm::vec2(vertex[i][0], vertex[i][1]));
+   }
+
 }
 int main(void)
 {
@@ -473,10 +495,9 @@ int main(void)
     IndexBuffer.update(T);
 
     // load PPM image file
-    readGeoJSON("../data/WB_Boundaries_GeoJSON_lowres/WB_countries_Admin0_lowres.geojson", VC);
-    for (auto& v : VC) {
-        std::cout << v[0] << " " << v[1] << std::endl;
-    }
+    readGeoJSON("../data/WB_Boundaries_GeoJSON_lowres/WB_countries_Admin0_lowres.geojson", vertices);
+    countriesRearrange(vertices, VC, I);
+
     ImageRGB image;
     bool imageAvailable = loadPPM(image, "../data/land_shallow_topo_2048.ppm");
     if (imageAvailable) {
