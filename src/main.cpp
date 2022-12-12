@@ -55,7 +55,7 @@ std::vector<glm::ivec3> T(3);
 // Contains the texture posions
 std::vector<glm::vec2> TX(3);
 // Contains values for countries
-std::vector<glm::vec2> VC;
+std::vector<glm::vec3> VC;
 std::vector<glm::ivec3> I;
 std::vector<Point> vertices;
 
@@ -410,18 +410,29 @@ void readGeoJSON(std::string filename, std::vector<Point> &vertex)
     }
     json j, coord;
     i >> j;
-    coord = j["features"][138]["geometry"]["coordinates"][0];
+    coord = j["features"][25]["geometry"]["coordinates"][0];
+
+    // write prettified JSON to another file
+    std::ofstream o("pretty.json");
+    o << std::setw(4) << j["features"][25] << std::endl;
 
     for (auto &co : coord)
     {
         vertex.push_back({co[0].get<float>(), co[1].get<float>()});
     }
 
-    // write prettified JSON to another file
-    std::ofstream o("pretty.json");
-    o << std::setw(4) << coord << std::endl;
 }
-void countriesRearrange(std::vector<Point> &vertex, std::vector<glm::vec2> &V, std::vector<glm::ivec3> &indices)
+void toSphericalCoord(float lat, float lon, glm::vec3 &coord, float radius) {
+    float lattitude = glm::radians(lat);
+    float longitude = glm::radians(lon);
+    float f = 0.0f;
+    float ls = atanf(pow((1 - f),2) * tanf(lattitude));
+    coord.x = radius * cosf(ls) * cosf(longitude);
+    coord.y = radius * cosf(ls) * sinf(longitude);
+    coord.z = radius * sinf(ls);
+
+}
+void countriesRearrange(std::vector<Point> &vertex, std::vector<glm::vec3> &V, std::vector<glm::ivec3> &indices)
 {
     std::vector<std::vector<Point>> polygon;
     polygon.push_back(vertex);
@@ -434,12 +445,13 @@ void countriesRearrange(std::vector<Point> &vertex, std::vector<glm::vec2> &V, s
     }
     for (int i = 0; i < vertex.size(); i++)
     {
-        V.push_back(glm::vec2(vertex[i][0], vertex[i][1]));
+        glm::vec3 coord;
+        toSphericalCoord(vertex[i][0], vertex[i][1], coord, 1.0f);
+        V.push_back(coord);
+
     }
 }
-glm::vec3 toSphericalCoord(float lattitude, float longitude, glm::vec3 coord, float radius) {
 
-}
 int main(void)
 {
 
