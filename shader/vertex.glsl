@@ -22,7 +22,7 @@ void main()
 {
     n = mat3(transpose(inverse(modelMatrix))) * normal;
     color = triangleColor;
-    pos = vec3(modelMatrix * vec4(position, 1.0));
+    // pos = vec3(modelMatrix * vec4(position, 1.0));
     gl_Position = projMatrix * viewMatrix * modelMatrix * vec4(position, 1.0);
     TexCoord = texCoord;
 }

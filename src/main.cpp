@@ -13,10 +13,10 @@
 #endif
 
 // OpenGL Mathematics Library
-#include <glm/glm.hpp> // glm::vec3
-#include <glm/vec3.hpp> // glm::vec3
-#include <glm/vec4.hpp> // glm::vec4
-#include <glm/mat4x4.hpp> // glm::mat4
+#include <glm/glm.hpp>                  // glm::vec3
+#include <glm/vec3.hpp>                 // glm::vec3
+#include <glm/vec4.hpp>                 // glm::vec4
+#include <glm/mat4x4.hpp>               // glm::mat4
 #include <glm/gtc/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale, glm::perspective
 #include <glm/gtc/type_ptr.hpp>
 
@@ -41,7 +41,6 @@ BufferObject TBO;
 // VertexBufferObject wrapper
 BufferObject IndexBuffer;
 
-
 // Types def
 using Coord = double;
 using N = uint32_t;
@@ -56,8 +55,8 @@ std::vector<glm::ivec3> T(3);
 // Contains the texture posions
 std::vector<glm::vec2> TX(3);
 // Contains values for countries
-std::vector<glm::vec2> VC(3);
-std::vector<glm::ivec3> I(3);
+std::vector<glm::vec2> VC;
+std::vector<glm::ivec3> I;
 std::vector<Point> vertices;
 
 std::vector<float> pixels;
@@ -78,16 +77,19 @@ float camRadius = 5.0f;
 #pragma endregion
 // PPM Reader code from http://josiahmanson.com/prose/optimize_ppm/
 
-struct RGB {
+struct RGB
+{
     unsigned char r, g, b;
 };
 
-struct ImageRGB {
+struct ImageRGB
+{
     int w, h;
     std::vector<RGB> data;
 };
 
-void eat_comment(std::ifstream& f) {
+void eat_comment(std::ifstream &f)
+{
     char linebuf[1024];
     char ppp;
     while (ppp = f.peek(), ppp == '\n' || ppp == '\r')
@@ -96,9 +98,11 @@ void eat_comment(std::ifstream& f) {
         f.getline(linebuf, 1023);
 }
 
-bool loadPPM(ImageRGB& img, const std::string& name) {
+bool loadPPM(ImageRGB &img, const std::string &name)
+{
     std::ifstream f(name.c_str(), std::ios::binary);
-    if (f.fail()) {
+    if (f.fail())
+    {
         std::cout << "Could not open file: " << name << std::endl;
         return false;
     }
@@ -127,23 +131,27 @@ bool loadPPM(ImageRGB& img, const std::string& name) {
     f >> bits;
 
     // error checking
-    if (mode != 3 && mode != 6) {
+    if (mode != 3 && mode != 6)
+    {
         std::cout << "Unsupported magic number" << std::endl;
         f.close();
         return false;
     }
-    if (img.w < 1) {
+    if (img.w < 1)
+    {
         std::cout << "Unsupported width: " << img.w << std::endl;
         f.close();
         return false;
     }
-    if (img.h < 1) {
+    if (img.h < 1)
+    {
         std::cout << "Unsupported height: " << img.h << std::endl;
         f.close();
         return false;
     }
-    if (bits < 1 || bits > 255) {
-        std::cout << "Unsupported number of bits: " << bits << std::    endl;
+    if (bits < 1 || bits > 255)
+    {
+        std::cout << "Unsupported number of bits: " << bits << std::endl;
         f.close();
         return false;
     }
@@ -151,12 +159,15 @@ bool loadPPM(ImageRGB& img, const std::string& name) {
     // load image data
     img.data.resize(img.w * img.h);
 
-    if (mode == 6) {
+    if (mode == 6)
+    {
         f.get();
-        f.read((char*)&img.data[0], img.data.size() * 3);
+        f.read((char *)&img.data[0], img.data.size() * 3);
     }
-    else if (mode == 3) {
-        for (int i = 0; i < img.data.size(); i++) {
+    else if (mode == 3)
+    {
+        for (int i = 0; i < img.data.size(); i++)
+        {
             int v;
             f >> v;
             img.data[i].r = v;
@@ -172,7 +183,7 @@ bool loadPPM(ImageRGB& img, const std::string& name) {
     return true;
 }
 
-bool loadOFFFile(std::string filename, std::vector<glm::vec3>& vertex, std::vector<glm::ivec3>& tria, glm::vec3& min, glm::vec3& max)
+bool loadOFFFile(std::string filename, std::vector<glm::vec3> &vertex, std::vector<glm::ivec3> &tria, glm::vec3 &min, glm::vec3 &max)
 {
     min.x = FLT_MAX;
     max.x = FLT_MIN;
@@ -180,9 +191,11 @@ bool loadOFFFile(std::string filename, std::vector<glm::vec3>& vertex, std::vect
     max.y = FLT_MIN;
     min.z = FLT_MAX;
     max.z = FLT_MIN;
-    try {
+    try
+    {
         std::ifstream ofs(filename, std::ios::in | std::ios_base::binary);
-        if (ofs.fail()) return false;
+        if (ofs.fail())
+            return false;
         std::string line, tmpStr;
         // First line(optional) : the letters OFF to mark the file type.
         // Second line : the number of vertices, number of faces, and number of edges, in order (the latter can be ignored by writing 0 instead).
@@ -203,7 +216,8 @@ bool loadOFFFile(std::string filename, std::vector<glm::vec3>& vertex, std::vect
 
         // read all vertices and get min/max values
         V.resize(numVert);
-        for (int i = 0; i < numVert; i++) {
+        for (int i = 0; i < numVert; i++)
+        {
             getline(ofs, line);
             tmpStream.clear();
             tmpStream.str(line);
@@ -223,12 +237,14 @@ bool loadOFFFile(std::string filename, std::vector<glm::vec3>& vertex, std::vect
 
         // read all faces (triangles)
         T.resize(numFace);
-        for (int i = 0; i < numFace; i++) {
+        for (int i = 0; i < numFace; i++)
+        {
             getline(ofs, line);
             tmpStream.clear();
             tmpStream.str(line);
             getline(tmpStream, tmpStr, ' ');
-            if (std::stoi(tmpStr) != 3) return false;
+            if (std::stoi(tmpStr) != 3)
+                return false;
             getline(tmpStream, tmpStr, ' ');
             T[i].x = std::stoi(tmpStr);
             getline(tmpStream, tmpStr, ' ');
@@ -239,7 +255,8 @@ bool loadOFFFile(std::string filename, std::vector<glm::vec3>& vertex, std::vect
 
         ofs.close();
     }
-    catch (const std::exception& e) {
+    catch (const std::exception &e)
+    {
         // return false if an exception occurred
         std::cerr << e.what() << std::endl;
         return false;
@@ -247,7 +264,8 @@ bool loadOFFFile(std::string filename, std::vector<glm::vec3>& vertex, std::vect
     return true;
 }
 
-void sphere(float sphereRadius, int sectorCount, int stackCount, std::vector<glm::vec3>& vertex, std::vector<glm::vec3>& normal, std::vector<glm::ivec3>& tria, std::vector<glm::vec2>& texture) {
+void sphere(float sphereRadius, int sectorCount, int stackCount, std::vector<glm::vec3> &vertex, std::vector<glm::vec3> &normal, std::vector<glm::ivec3> &tria, std::vector<glm::vec2> &texture)
+{
     // init variables
     vertex.resize(0);
     normal.resize(0);
@@ -259,15 +277,17 @@ void sphere(float sphereRadius, int sectorCount, int stackCount, std::vector<glm
     float sectorStep = 2.0f * M_PI / float(sectorCount);
     float stackStep = M_PI / stackCount;
     float sectorAngle, stackAngle;
-    float s,t;
+    float s, t;
 
     // compute vertices and normals
-    for (int i = 0; i <= stackCount; ++i) {
+    for (int i = 0; i <= stackCount; ++i)
+    {
         stackAngle = M_PI / 2.0f - i * stackStep;
         xy = sphereRadius * cosf(stackAngle);
         sphereVertexPos.z = sphereRadius * sinf(stackAngle);
 
-        for (int j = 0; j <= sectorCount; ++j) {
+        for (int j = 0; j <= sectorCount; ++j)
+        {
             sectorAngle = j * sectorStep;
 
             // vertex position
@@ -281,52 +301,55 @@ void sphere(float sphereRadius, int sectorCount, int stackCount, std::vector<glm
             // texture coordinates
             s = (float)j / sectorCount;
             t = (float)i / stackCount;
-            texture.push_back(glm::vec2(s,t));
+            texture.push_back(glm::vec2(s, t));
         }
     }
 
     // compute triangle indices
     int k1, k2;
-    for (int i = 0; i < stackCount; ++i) {
+    for (int i = 0; i < stackCount; ++i)
+    {
         k1 = i * (sectorCount + 1);
         k2 = k1 + sectorCount + 1;
 
-        for (int j = 0; j < sectorCount; ++j, ++k1, ++k2) {
+        for (int j = 0; j < sectorCount; ++j, ++k1, ++k2)
+        {
             // 2 triangles per sector excluding first and last stacks
             // k1 => k2 => k1+1
-            if (i != 0) {
+            if (i != 0)
+            {
                 T.push_back(glm::ivec3(k1, k2, k1 + 1));
             }
             // k1+1 => k2 => k2+1
-            if (i != (stackCount - 1)) {
+            if (i != (stackCount - 1))
+            {
                 T.push_back(glm::ivec3(k1 + 1, k2, k2 + 1));
             }
         }
     }
-
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
     glViewport(0, 0, width, height);
 }
 
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
 {
     // Get the size of the window
     int width, height;
     glfwGetWindowSize(window, &width, &height);
 
     // Update the position of the first vertex if the left button is pressed
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
         // Get the position of the mouse in the window
         glfwGetCursorPos(window, &xpos, &ypos);
         std::cout << xpos << " " << ypos << std::endl;
     }
-
 }
 
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
     // temp variables
     glm::mat3 rot;
@@ -376,43 +399,52 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     default:
         break;
     }
-
 }
 
-void readGeoJSON(std::string filename,std::vector<Point>& vertex) {
+void readGeoJSON(std::string filename, std::vector<Point> &vertex)
+{
     std::ifstream i(filename);
-    if (i.fail()) {
+    if (i.fail())
+    {
         std::cout << "Could not open file: " << filename << std::endl;
     }
     json j, coord;
     i >> j;
     coord = j["features"][138]["geometry"]["coordinates"][0];
 
-    for (auto& co : coord) {
-        vertex.push_back({co[0].get<float>(),co[1].get<float>()});
+    for (auto &co : coord)
+    {
+        vertex.push_back({co[0].get<float>(), co[1].get<float>()});
     }
 
     // write prettified JSON to another file
     std::ofstream o("pretty.json");
     o << std::setw(4) << coord << std::endl;
 }
-void countriesRearrange(std::vector<Point>& vertex,std::vector<glm::vec2>& V, std::vector<glm::ivec3> indices ) {
-   std::vector<std::vector<Point>> polygon;
-   polygon.push_back(vertex);
-   std::vector<N> indice = mapbox::earcut<N>(polygon);
-   for (int i=0; i<indice.size(); i+= 3) {
-        indices.push_back(glm::ivec3(indice[i], indice[i+1], indice[i+2]));
-   }
-   for (int i=0; i<vertex.size(); i++) {
+void countriesRearrange(std::vector<Point> &vertex, std::vector<glm::vec2> &V, std::vector<glm::ivec3> &indices)
+{
+    std::vector<std::vector<Point>> polygon;
+    polygon.push_back(vertex);
+    std::vector<N> indice = mapbox::earcut<N>(polygon);
+    std::cout << polygon.size() <<"does this work? " << indice.size() << std::endl;
+    for (int i = 0; i < indice.size(); i += 3)
+    {
+        indices.push_back(glm::ivec3(indice[i], indice[i + 1], indice[i + 2]));
+        
+    }
+    for (int i = 0; i < vertex.size(); i++)
+    {
         V.push_back(glm::vec2(vertex[i][0], vertex[i][1]));
-   }
+    }
+}
+glm::vec3 toSphericalCoord(float lattitude, float longitude, glm::vec3 coord, float radius) {
 
 }
 int main(void)
 {
 
-    #pragma region // Window creation and stuff
-    GLFWwindow* window;
+#pragma region // Window creation and stuff
+    GLFWwindow *window;
 
     // Initialize the library
     if (!glfwInit())
@@ -442,28 +474,28 @@ int main(void)
     // Make the window's context current
     glfwMakeContextCurrent(window);
 
-    #ifndef __APPLE__
-      glewExperimental = true;
-      GLenum err = glewInit();
-      if(GLEW_OK != err)
-      {
+#ifndef __APPLE__
+    glewExperimental = true;
+    GLenum err = glewInit();
+    if (GLEW_OK != err)
+    {
         /* Problem: glewInit failed, something is seriously wrong. */
-       std::cerr << "Error: " << glewGetErrorString(err) << std::endl;
-      }
-      glGetError(); // pull and savely ignonre unhandled errors like GL_INVALID_ENUM
-      std::cout << "Status: Using GLEW " << glewGetString(GLEW_VERSION) << std::endl;
-    #endif
+        std::cerr << "Error: " << glewGetErrorString(err) << std::endl;
+    }
+    glGetError(); // pull and savely ignonre unhandled errors like GL_INVALID_ENUM
+    std::cout << "Status: Using GLEW " << glewGetString(GLEW_VERSION) << std::endl;
+#endif
 
     int major, minor, rev;
     major = glfwGetWindowAttrib(window, GLFW_CONTEXT_VERSION_MAJOR);
     minor = glfwGetWindowAttrib(window, GLFW_CONTEXT_VERSION_MINOR);
     rev = glfwGetWindowAttrib(window, GLFW_CONTEXT_REVISION);
     std::cout << "OpenGL version recieved: " << major << "." << minor << "." << rev << std::endl;
-    std::cout << "Supported OpenGL is " << (const char*)glGetString(GL_VERSION) << std::endl;
-    std::cout << "Supported GLSL is " << (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
-    #pragma endregion
+    std::cout << "Supported OpenGL is " << (const char *)glGetString(GL_VERSION) << std::endl;
+    std::cout << "Supported GLSL is " << (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+#pragma endregion
 
-    #pragma region // VAO and VBO init
+#pragma region // VAO and VBO init
     // Initialize the VAO
     // A Vertex Array Object (or VAO) is an object that describes how the vertex
     // attributes are stored in a Vertex Buffer Object (or VBO). This means that
@@ -476,89 +508,59 @@ int main(void)
     // Initialize the VBO with the vertices data
     VBO.init();
     // initialize normal array buffer
-    NBO.init();
+    // NBO.init();
     // initialize texture array buffer
-    TBO.init();
+    // TBO.init();
     // initialize element array buffer
     IndexBuffer.init(GL_ELEMENT_ARRAY_BUFFER);
     // initialize model matrix
     glm::mat4 modelMatrix = glm::mat4(1.0f);
-    #pragma endregion
-
-    // 1: generate sphere, 0: load OFF model
-#if 1
-    // generate sphere (radius, #sectors, #stacks, vertices, normals, triangle indices)
-    sphere(1.0f, 20, 10, V, VN, T, TX);
-    VBO.update(V);
-    NBO.update(VN);
-    TBO.update(TX);
-    IndexBuffer.update(T);
+#pragma endregion
 
     // load PPM image file
     readGeoJSON("../data/WB_Boundaries_GeoJSON_lowres/WB_countries_Admin0_lowres.geojson", vertices);
     countriesRearrange(vertices, VC, I);
+    for (int i=0; i< VC.size(); i++) {
+        std::cout << VC[i].x << " " <<VC[i].y << std::endl; 
+    }
+    for (int i=0; i < I.size(); i++ ) {
+        std::cout << I[i].x << ' ' << I[i].y << " " << I[i].z << std::endl;
+    }
+    // generate sphere (radius, #sectors, #stacks, vertices, normals, triangle indices)
+    // sphere(1.0f, 20, 10, V, VN, T, TX);
+    // VBO.update(V);
+    // NBO.update(VN);
+    // TBO.update(TX);
+    // IndexBuffer.update(T);
+
+    VBO.update(VC);
+    IndexBuffer.update(I);
+    // modelMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(1/ 2.0f));
+    // modelMatrix *= glm::translate(glm::mat4(), glm::vec3(34.0f, 29.0f, 0.0f));
+    // tmpVec = max - min;
+    // float maxVal = glm::max(tmpVec.x, glm::max(tmpVec.y, tmpVec.z));
+    // tmpVec /= 2.0f;
+    // modelMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f / maxVal));
+    // modelMatrix *= glm::translate(glm::mat4(1.0f), -(min + tmpVec));
 
     ImageRGB image;
     bool imageAvailable = loadPPM(image, "../data/land_shallow_topo_2048.ppm");
-    if (imageAvailable) {
-        for (int j=0; j < image.w * image.h; j++ ) {
-            pixels.push_back( image.data[j].r);
-            pixels.push_back( image.data[j].g);
-            pixels.push_back( image.data[j].b);
+    if (imageAvailable)
+    {
+        for (int j = 0; j < image.w * image.h; j++)
+        {
+            pixels.push_back(image.data[j].r);
+            pixels.push_back(image.data[j].g);
+            pixels.push_back(image.data[j].b);
         }
     }
 
-#else
-    // load  OFF file
-    glm::vec3 min, max, tmpVec;
-    std::cout << "Loading OFF file...";
-    loadOFFFile("../data/stanford_dragon2.off", V, T, min, max);
-    //loadOFFFile("../data/bunny.off", V, T, min, max);
-    std::cout << " done! " << V.size() << " vertices, " << T.size() << " triangles" << std::endl;
-    VBO.update(V);
-    IndexBuffer.update(T);
-
-    // compute model matrix so that the mesh is inside a -1..1 cube
-    tmpVec = max - min;
-    float maxVal = glm::max(tmpVec.x, glm::max(tmpVec.y, tmpVec.z));
-    tmpVec /= 2.0f;
-    modelMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f / maxVal));
-    modelMatrix *= glm::translate(glm::mat4(1.0f), -(min + tmpVec));
-    
-    // compute face normals
-    std::cout << "Computing face normals...";
-    std::vector<glm::vec3> faceN(3);
-    faceN.resize(T.size());
-    for (unsigned int i = 0; i < faceN.size(); i++) {
-        faceN[i] = glm::normalize(glm::cross(V[T[i].y] - V[T[i].x], V[T[i].z] - V[T[i].x]));
-    }
-    std::cout << " done!" << std::endl;
-    // compute vertex normals
-    std::cout << "Computing vertex normals...";
-    VN.resize(V.size());
-    for (unsigned int i = 0; i < VN.size(); i++) {
-        VN[i] = glm::vec3(0.0f);
-    }
-    for (unsigned int j = 0; j < T.size(); j++) {
-        VN[T[j].x] += faceN[j];
-        VN[T[j].y] += faceN[j];
-        VN[T[j].z] += faceN[j];
-    }
-    for (unsigned int i = 0; i < VN.size(); i++) {
-        VN[i] = glm::normalize(VN[i]);
-    }
-    std::cout << " done!" << std::endl;
-    // initialize normal array buffer
-    NBO.init();
-    NBO.update(VN);
-#endif
-
-    #pragma region // Program init and binding
+#pragma region // Program init and binding
     // Initialize the OpenGL Program
     // A program controls the OpenGL pipeline and it must contains
     // at least a vertex shader and a fragment shader to be valid
     Program program;
-    // load fragment shader file 
+    // load fragment shader file
     std::ifstream fragShaderFile("../shader/fragment.glsl");
     std::stringstream fragCode;
     fragCode << fragShaderFile.rdbuf();
@@ -576,20 +578,19 @@ int main(void)
     // The following line connects the VBO we defined above with the position "slot"
     // in the vertex shader
     program.bindVertexAttribArray("position", VBO);
-    program.bindVertexAttribArray("normal", NBO);
-    program.bindVertexAttribArray("texCoord", TBO);
+    // program.bindVertexAttribArray("normal", NBO);
+    // program.bindVertexAttribArray("texCoord", TBO);
 
-    //Create texture and upload image data
+    // Create texture and upload image data
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.w, image.h, 0, GL_RGB, GL_FLOAT, &pixels[0]);
-    glGenerateMipmap(GL_TEXTURE_2D);
-
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.w, image.h, 0, GL_RGB, GL_FLOAT, &pixels[0]);
+    // // glGenerateMipmap(GL_TEXTURE_2D);
 
     // Register the keyboard callback
     glfwSetKeyCallback(window, key_callback);
@@ -606,7 +607,7 @@ int main(void)
     cameraDirection = glm::normalize(cameraPos - cameraTarget);
     cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
     cameraRight = glm::normalize(glm::cross(cameraUp, cameraDirection));
-    #pragma endregion
+#pragma endregion
 
     // Loop until the user closes the window
     while (!glfwWindowShouldClose(window))
@@ -637,7 +638,7 @@ int main(void)
         glUniformMatrix4fv(program.uniform("projMatrix"), 1, GL_FALSE, glm::value_ptr(projMatrix));
         // direction towards the light
         glUniform3fv(program.uniform("lightPos"), 1, glm::value_ptr(glm::vec3(-1.0f, 2.0f, 3.0f)));
-        // x: ambient; 
+        // x: ambient;
         glUniform3f(program.uniform("lightParams"), 0.1f, 50.0f, 0.0f);
 
         // Clear the framebuffer
@@ -646,10 +647,11 @@ int main(void)
 
         // Enable depth test
         glEnable(GL_DEPTH_TEST);
-        
+
         // Draw a triangle
-        //glDrawArrays(GL_TRIANGLES, 0, V.size());
-        glDrawElements(GL_TRIANGLES, T.size() * 3, GL_UNSIGNED_INT, 0);
+        // glDrawArrays(GL_TRIANGLES, 0, V.size());
+        // glDrawElements(GL_TRIANGLES, T.size() * 3, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, I.size() * 3, GL_UNSIGNED_INT, 0);
 
         // Swap front and back buffers
         glfwSwapBuffers(window);
@@ -657,7 +659,7 @@ int main(void)
         // Poll for and process events
         glfwPollEvents();
     }
-    #pragma region // Deallocation
+#pragma region // Deallocation
     // Deallocate opengl memory
     program.free();
     VAO.free();
@@ -667,5 +669,5 @@ int main(void)
     // Deallocate glfw internals
     glfwTerminate();
     return 0;
-    #pragma endregion
+#pragma endregion
 }
