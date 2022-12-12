@@ -16,14 +16,14 @@ uniform sampler2D tex;
 
 void main()
 {
-    // vec3 col = color;
-    // vec3 normal = normalize(n);
-    // vec3 lightDir = normalize(lightPos - pos);
-    // col = clamp( triangleColor * lightParams.x + 
-    //     triangleColor * max(0.0, dot(normal, lightDir)) + 
-    //     vec3(1.0) * pow(max(0.0, dot( normalize(camPos - pos), normalize( reflect(-lightDir, normal)))), lightParams.y),
-    //     0.0, 1.0);
+    vec3 col = color;
+    vec3 normal = normalize(n);
+    vec3 lightDir = normalize(lightPos - pos);
+    col = clamp( triangleColor * lightParams.x + 
+        triangleColor * max(0.0, dot(normal, lightDir)) + 
+        vec3(1.0) * pow(max(0.0, dot( normalize(camPos - pos), normalize( reflect(-lightDir, normal)))), lightParams.y),
+        0.0, 1.0);
     
-    // outColor = texture(tex, TexCoord) * vec4(col, 1);
-    outColor  = vec4(triangleColor,1);
+    outColor = texture(tex, TexCoord) * vec4(col, 1);
+    // outColor  = vec4(triangleColor,1);
 }

@@ -34,13 +34,18 @@ using json = nlohmann::json;
 #pragma region // Variables
 // VertexBufferObject wrapper
 BufferObject VBO;
+BufferObject VBOC;
 // VertexBufferObject wrapper
 BufferObject NBO;
 // VertexBufferObject wrapper
 BufferObject TBO;
 // VertexBufferObject wrapper
 BufferObject IndexBuffer;
+BufferObject Indexes;
 
+// Program def
+Program program;
+Program countriesProgram;
 // Types def
 using Coord = double;
 using N = uint32_t;
@@ -437,7 +442,6 @@ void countriesRearrange(std::vector<Point> &vertex, std::vector<glm::vec3> &V, s
     std::vector<std::vector<Point>> polygon;
     polygon.push_back(vertex);
     std::vector<N> indice = mapbox::earcut<N>(polygon);
-    std::cout << polygon.size() <<"does this work? " << indice.size() << std::endl;
     for (int i = 0; i < indice.size(); i += 3)
     {
         indices.push_back(glm::ivec3(indice[i], indice[i + 1], indice[i + 2]));
@@ -446,7 +450,7 @@ void countriesRearrange(std::vector<Point> &vertex, std::vector<glm::vec3> &V, s
     for (int i = 0; i < vertex.size(); i++)
     {
         glm::vec3 coord;
-        toSphericalCoord(vertex[i][0], vertex[i][1], coord, 1.0f);
+        toSphericalCoord(vertex[i][0], vertex[i][1], coord, 1.01f);
         V.push_back(coord);
 
     }
@@ -507,54 +511,9 @@ int main(void)
     std::cout << "Supported GLSL is " << (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 #pragma endregion
 
-#pragma region // VAO and VBO init
-    // Initialize the VAO
-    // A Vertex Array Object (or VAO) is an object that describes how the vertex
-    // attributes are stored in a Vertex Buffer Object (or VBO). This means that
-    // the VAO is not the actual object storing the vertex data,
-    // but the descriptor of the vertex data.
-    VertexArrayObject VAO;
-    VAO.init();
-    VAO.bind();
-
-    // Initialize the VBO with the vertices data
-    VBO.init();
-    // initialize normal array buffer
-    // NBO.init();
-    // initialize texture array buffer
-    // TBO.init();
-    // initialize element array buffer
-    IndexBuffer.init(GL_ELEMENT_ARRAY_BUFFER);
-    // initialize model matrix
-    glm::mat4 modelMatrix = glm::mat4(1.0f);
-#pragma endregion
-
-    // load PPM image file
+#pragma region // Read data
     readGeoJSON("../data/WB_Boundaries_GeoJSON_lowres/WB_countries_Admin0_lowres.geojson", vertices);
     countriesRearrange(vertices, VC, I);
-    for (int i=0; i< VC.size(); i++) {
-        std::cout << VC[i].x << " " <<VC[i].y << std::endl; 
-    }
-    for (int i=0; i < I.size(); i++ ) {
-        std::cout << I[i].x << ' ' << I[i].y << " " << I[i].z << std::endl;
-    }
-    // generate sphere (radius, #sectors, #stacks, vertices, normals, triangle indices)
-    // sphere(1.0f, 20, 10, V, VN, T, TX);
-    // VBO.update(V);
-    // NBO.update(VN);
-    // TBO.update(TX);
-    // IndexBuffer.update(T);
-
-    VBO.update(VC);
-    IndexBuffer.update(I);
-    // modelMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(1/ 2.0f));
-    // modelMatrix *= glm::translate(glm::mat4(), glm::vec3(34.0f, 29.0f, 0.0f));
-    // tmpVec = max - min;
-    // float maxVal = glm::max(tmpVec.x, glm::max(tmpVec.y, tmpVec.z));
-    // tmpVec /= 2.0f;
-    // modelMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(2.0f / maxVal));
-    // modelMatrix *= glm::translate(glm::mat4(1.0f), -(min + tmpVec));
-
     ImageRGB image;
     bool imageAvailable = loadPPM(image, "../data/land_shallow_topo_2048.ppm");
     if (imageAvailable)
@@ -567,11 +526,27 @@ int main(void)
         }
     }
 
-#pragma region // Program init and binding
-    // Initialize the OpenGL Program
-    // A program controls the OpenGL pipeline and it must contains
-    // at least a vertex shader and a fragment shader to be valid
-    Program program;
+#pragma endregion
+#pragma region // Earth VAO and program
+    VertexArrayObject VAO;
+    VAO.init();
+    VAO.bind();
+
+    // Initialize the VBO with the vertices data
+    VBO.init();
+     // initialize normal array buffer
+    NBO.init();
+    // initialize texture array buffer
+    TBO.init();
+    // initialize element array buffer
+    IndexBuffer.init(GL_ELEMENT_ARRAY_BUFFER);
+    
+    sphere(1.0f, 20, 10, V, VN, T, TX);
+    VBO.update(V);
+    NBO.update(VN);
+    TBO.update(TX);
+    IndexBuffer.update(T);
+
     // load fragment shader file
     std::ifstream fragShaderFile("../shader/fragment.glsl");
     std::stringstream fragCode;
@@ -590,20 +565,53 @@ int main(void)
     // The following line connects the VBO we defined above with the position "slot"
     // in the vertex shader
     program.bindVertexAttribArray("position", VBO);
-    // program.bindVertexAttribArray("normal", NBO);
-    // program.bindVertexAttribArray("texCoord", TBO);
+    program.bindVertexAttribArray("normal", NBO);
+    program.bindVertexAttribArray("texCoord", TBO);
 
     // Create texture and upload image data
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.w, image.h, 0, GL_RGB, GL_FLOAT, &pixels[0]);
-    // // glGenerateMipmap(GL_TEXTURE_2D);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, image.w, image.h, 0, GL_RGB, GL_FLOAT, &pixels[0]);
+    glGenerateMipmap(GL_TEXTURE_2D);
 
+    // Unbind everything
+    glBindVertexArray(0);
+    glUseProgram(0);
+#pragma endregion
+ 
+#pragma region // Countries VAO and program
+    VertexArrayObject VAOC;
+    VAOC.init();
+    VAOC.bind();
+    VBOC.init();
+    Indexes.init(GL_ELEMENT_ARRAY_BUFFER);
+
+    VBOC.update(VC);
+    Indexes.update(I);
+
+    // New Program
+    std::ifstream fragShaderFile2("../shader/fragment2.glsl");
+    std::stringstream fragCode2;
+    fragCode2 << fragShaderFile2.rdbuf();
+    // load vertex shader file
+    std::ifstream vertShaderFile2("../shader/vertex2.glsl");
+    std::stringstream vertCode2;
+    vertCode2 << vertShaderFile2.rdbuf();
+    countriesProgram.init(vertCode2.str(), fragCode2.str(), "outColor");
+    countriesProgram.bind();
+    countriesProgram.bindVertexAttribArray("position", VBOC);
+
+    // Unbind everything
+    glBindVertexArray(0);
+    glUseProgram(0);
+#pragma endregion
+
+#pragma region // Callbacks and camera position
     // Register the keyboard callback
     glfwSetKeyCallback(window, key_callback);
 
@@ -629,19 +637,27 @@ int main(void)
         glfwGetWindowSize(window, &width, &height);
 
         // matrix calculations
+        // initialize model matrix
+        glm::mat4 modelMatrix = glm::mat4(1.0f);
         viewMatrix = glm::lookAt(cameraPos, cameraTarget, cameraUp);
         projMatrix = glm::perspective(glm::radians(35.0f), (float)width / (float)height, 0.1f, 100.0f);
+        // Clear the framebuffer
+        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // Enable depth test
+        glEnable(GL_DEPTH_TEST);
+        #pragma region // Earth
         // Bind your VAO (not necessary if you have only one)
         VAO.bind();
 
-        // bind your element array
+        // // bind your element array
         IndexBuffer.bind();
 
-        // Bind your program
+        // // Bind your program
         program.bind();
 
-        // Set the uniform values
+        // // Set the uniform values
         glBindTexture(GL_TEXTURE_2D, texture);
         glUniform3f(program.uniform("triangleColor"), 0.006f, 0.006f, 0.006f);
         glUniform3f(program.uniform("camPos"), cameraPos.x, cameraPos.y, cameraPos.z);
@@ -653,18 +669,23 @@ int main(void)
         // x: ambient;
         glUniform3f(program.uniform("lightParams"), 0.1f, 50.0f, 0.0f);
 
-        // Clear the framebuffer
-        glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // Enable depth test
-        glEnable(GL_DEPTH_TEST);
-
         // Draw a triangle
-        // glDrawArrays(GL_TRIANGLES, 0, V.size());
-        // glDrawElements(GL_TRIANGLES, T.size() * 3, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, T.size() * 3, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+        glUseProgram(0);
+        #pragma endregion
+        #pragma region // Countries rendering
+        VAOC.bind();
+        countriesProgram.bind();
+        Indexes.bind();
+        glUniform3f(countriesProgram.uniform("triangleColor"), 1.0f, 0.606f, 0.006f);
+        glUniformMatrix4fv(countriesProgram.uniform("modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
+        glUniformMatrix4fv(countriesProgram.uniform("viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
+        glUniformMatrix4fv(countriesProgram.uniform("projMatrix"), 1, GL_FALSE, glm::value_ptr(projMatrix));
         glDrawElements(GL_TRIANGLES, I.size() * 3, GL_UNSIGNED_INT, 0);
-
+        glBindVertexArray(0);
+        glUseProgram(0);
+        #pragma endregion
         // Swap front and back buffers
         glfwSwapBuffers(window);
 
@@ -673,10 +694,12 @@ int main(void)
     }
 #pragma region // Deallocation
     // Deallocate opengl memory
-    program.free();
-    VAO.free();
-    VBO.free();
-    TBO.free();
+    // program.free();
+    // VAO.free();
+    // VBO.free();
+    // TBO.free();
+    // VAOC.free();
+    // VBOC.free();
 
     // Deallocate glfw internals
     glfwTerminate();
