@@ -454,7 +454,7 @@ void readGeoJSON(std::string filename, MultiPoly &vertex)
     json j;
     i >> j;
 
-    int countryFID = 25;
+    int countryFID = 149;
     if (j["features"][countryFID]["geometry"]["type"].get<std::string>() == "Polygon")
     {
         std::vector<std::vector<Point>> coordinates = j["features"][countryFID]["geometry"]["coordinates"].get<std::vector<std::vector<Point>>>();
@@ -485,8 +485,8 @@ void readGeoJSON(std::string filename, MultiPoly &vertex)
 }
 void toSphericalCoord(float lat, float lon, glm::vec3 &coord, float radius)
 {
-    float lattitude = glm::radians(lat);
-    float longitude = glm::radians(lon);
+    float lattitude = glm::radians(lon);
+    float longitude = glm::radians(lat);
     float f = 0.0f;
     float ls = atanf(pow((1 - f), 2) * tanf(lattitude));
     coord.x = radius * cosf(ls) * cosf(longitude);
@@ -496,6 +496,7 @@ void toSphericalCoord(float lat, float lon, glm::vec3 &coord, float radius)
 void countriesRearrange(MultiPoly &vertex, std::vector<glm::vec3> &V, std::vector<glm::ivec3> &indices)
 {
     if (vertex.size() == 1)
+    // if (1)
     {
         std::vector<N> indice = mapbox::earcut<N>(vertex[0]);
         for (int i = 0; i < indice.size(); i += 3)
@@ -510,6 +511,31 @@ void countriesRearrange(MultiPoly &vertex, std::vector<glm::vec3> &V, std::vecto
                 toSphericalCoord(vertex[0][i][j][0], vertex[0][i][j][1], coord, 1.01f);
                 V.push_back(coord);
             }
+        }
+    }
+    else
+    {
+        N prevMax = 0, currMax = 0;
+        for (int i = 0; i < vertex.size(); i++)
+        {
+            std::vector<N> indice = mapbox::earcut<N>(vertex[i]);
+            for (int j = 0; j < indice.size(); j += 3)
+            {
+                indices.push_back(glm::ivec3(prevMax + indice[j],prevMax +  indice[j + 1],prevMax +  indice[j + 2]));
+                currMax = std::max(std::max(currMax, indice[j]), std::max(indice[j+1],indice[j+2]));
+            }
+            for (int j = 0; j < vertex[i].size(); j++)
+            {
+                for (int k = 0; k < vertex[i][j].size(); k++)
+                {
+                    glm::vec3 coord;
+                    toSphericalCoord(vertex[i][j][k][0], vertex[i][j][k][1], coord, 1.01f);
+                    V.push_back(coord);
+                }
+            }
+            prevMax += currMax + 1;
+            currMax = 0;
+            std::cout << prevMax << std::endl;
         }
     }
 }
