@@ -11,13 +11,14 @@ uniform vec3 triangleColor;
 in vec3 position;
 
 
-out vec3 color;
-out vec3 ;
+// out vec3 color;
+out vec4 pos;
 
 
 void main()
 {
-    color = triangleColor;
-    // pos = vec3(modelMatrix * vec4(position, 1.0));
+    // color = triangleColor;
+    // pos = projMatrix * viewMatrix * modelMatrix * rotationMatrix * vec4(position, 1.0);
+    pos = rotationMatrix * vec4(position, 1.0); 
     gl_Position = projMatrix * viewMatrix * modelMatrix * rotationMatrix * vec4(position, 1.0);
 }

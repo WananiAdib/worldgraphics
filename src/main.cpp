@@ -69,6 +69,7 @@ std::vector<float> pixels;
 
 // Last position of the mouse on click
 double xpos, ypos;
+int fid;
 
 // camera setup and matrix calculations
 glm::vec3 cameraPos;
@@ -529,19 +530,24 @@ void countriesRearrange(MultiPoly &vertex, std::vector<glm::vec3> &V, std::vecto
                 for (int k = 0; k < vertex[i][j].size(); k++)
                 {
                     glm::vec3 coord;
-                    toSphericalCoord(vertex[i][j][k][0], vertex[i][j][k][1], coord, 1.01f);
+                    toSphericalCoord(vertex[i][j][k][0], vertex[i][j][k][1], coord, 1.1f);
                     V.push_back(coord);
                 }
             }
             prevMax += currMax + 1;
             currMax = 0;
-            std::cout << prevMax << std::endl;
         }
     }
 }
 
 int main(void)
 {
+// Testing
+    int i;
+  std::cout << "Please enter an integer value: ";
+  std::cin >> i;
+  std::cout << "The value you entered is " << i;
+  std::cout << " and its double is " << i*2 << ".\n";
 
 #pragma region // Window creation and stuff
     GLFWwindow *window;
