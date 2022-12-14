@@ -50,6 +50,7 @@ Program countriesProgram;
 using Coord = double;
 using N = uint32_t;
 using Point = std::array<Coord, 2>;
+using MultiPoly = std::vector<std::vector<std::vector<Point>>>;
 
 // Contains the vertex positions
 std::vector<glm::vec3> V(3);
@@ -62,7 +63,7 @@ std::vector<glm::vec2> TX(3);
 // Contains values for countries
 std::vector<glm::vec3> VC;
 std::vector<glm::ivec3> I;
-std::vector<std::vector<Point>> vertices;
+MultiPoly vertices;
 
 std::vector<float> pixels;
 
@@ -442,18 +443,28 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     }
 }
 
-void readGeoJSON(std::string filename, std::vector<std::vector<Point>> &vertex)
+void readGeoJSON(std::string filename, MultiPoly &vertex)
 {
+    // Read file
     std::ifstream i(filename);
     if (i.fail())
     {
         std::cout << "Could not open file: " << filename << std::endl;
     }
-    json j, coord;
+    json j;
     i >> j;
-    coord = j["features"][138]["geometry"]["coordinates"].get<std::vector<std::vector<Point>>>();
-    vertex.resize(coord.size());
-    vertex = coord;
+
+    int countryFID = 25;
+    if (j["features"][countryFID]["geometry"]["type"].get<std::string>() == "Polygon")
+    {
+        std::vector<std::vector<Point>> coordinates = j["features"][countryFID]["geometry"]["coordinates"].get<std::vector<std::vector<Point>>>();
+        vertex.push_back(coordinates);
+    }
+    else
+    {
+        vertex.resize(j["features"][countryFID]["geometry"]["coordinates"].get<MultiPoly>().size());
+        vertex = j["features"][countryFID]["geometry"]["coordinates"].get<MultiPoly>();
+    }
     // check if one exits
     for (int i = 0; i < 195; i++)
     {
@@ -465,7 +476,7 @@ void readGeoJSON(std::string filename, std::vector<std::vector<Point>> &vertex)
     // coord
     // write prettified JSON to another file
     std::ofstream o("pretty.json");
-    o << std::setw(4) << j["features"][66] << std::endl;
+    o << std::setw(4) << j["features"][countryFID] << std::endl;
 
     // for (auto &co : coord)
     // {
@@ -482,22 +493,23 @@ void toSphericalCoord(float lat, float lon, glm::vec3 &coord, float radius)
     coord.y = radius * cosf(ls) * sinf(longitude);
     coord.z = radius * sinf(ls);
 }
-void countriesRearrange(std::vector<std::vector<Point>> &vertex, std::vector<glm::vec3> &V, std::vector<glm::ivec3> &indices)
+void countriesRearrange(MultiPoly &vertex, std::vector<glm::vec3> &V, std::vector<glm::ivec3> &indices)
 {
-    // std::vector<std::vector<Point>> polygon;
-    // polygon.push_back(vertex);
-    std::vector<N> indice = mapbox::earcut<N>(vertex);
-    for (int i = 0; i < indice.size(); i += 3)
+    if (vertex.size() == 1)
     {
-        indices.push_back(glm::ivec3(indice[i], indice[i + 1], indice[i + 2]));
-    }
-    for (int i = 0; i < vertex.size(); i++)
-    {
-        for (j = 0; j < vertex[i].size(); j++)
+        std::vector<N> indice = mapbox::earcut<N>(vertex[0]);
+        for (int i = 0; i < indice.size(); i += 3)
         {
-            glm::vec3 coord;
-            toSphericalCoord(vertex[i][0], vertex[i][1], coord, 1.01f);
-            V.push_back(coord);
+            indices.push_back(glm::ivec3(indice[i], indice[i + 1], indice[i + 2]));
+        }
+        for (int i = 0; i < vertex[0].size(); i++)
+        {
+            for (int j = 0; j < vertex[0][i].size(); j++)
+            {
+                glm::vec3 coord;
+                toSphericalCoord(vertex[0][i][j][0], vertex[0][i][j][1], coord, 1.01f);
+                V.push_back(coord);
+            }
         }
     }
 }
