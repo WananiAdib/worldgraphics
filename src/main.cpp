@@ -62,7 +62,7 @@ std::vector<glm::vec2> TX(3);
 // Contains values for countries
 std::vector<glm::vec3> VC;
 std::vector<glm::ivec3> I;
-std::vector<Point> vertices;
+std::vector<std::vector<Point>> vertices;
 
 std::vector<float> pixels;
 
@@ -77,6 +77,13 @@ glm::vec3 cameraUp;
 glm::vec3 cameraRight;
 glm::mat4 viewMatrix;
 glm::mat4 projMatrix;
+glm::mat4 rotationMatrix = glm::mat4(1.0f);
+
+// Axis and rotations
+glm::vec3 centroid;
+glm::vec3 axisDir;
+glm::vec3 axisUp;
+glm::vec3 axisRight;
 
 float camRadius = 5.0f;
 #pragma endregion
@@ -358,6 +365,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 {
     // temp variables
     glm::mat3 rot;
+    glm::mat4 rota;
     // Update the position of the first vertex if the keys 1,2, or 3 are pressed
     switch (key)
     {
@@ -398,6 +406,34 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
         cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
         cameraRight = glm::normalize(glm::cross(cameraUp, cameraDirection));
         break;
+    case GLFW_KEY_I:
+        rota = glm::rotate(glm::mat4(1.0f), glm::radians(-5.0f), axisUp);
+        centroid = rota * glm::vec4(centroid, 1);
+        rotationMatrix *= rota;
+        axisDir = glm::normalize(centroid - cameraTarget);
+        axisRight = glm::normalize(glm::cross(axisUp, axisDir));
+        break;
+    case GLFW_KEY_K:
+        rota = glm::rotate(glm::mat4(1.0f), glm::radians(5.0f), axisUp);
+        centroid = rota * glm::vec4(centroid, 1);
+        rotationMatrix *= rota;
+        axisDir = glm::normalize(centroid - cameraTarget);
+        axisRight = glm::normalize(glm::cross(axisUp, axisDir));
+        break;
+    case GLFW_KEY_J:
+        rota = glm::rotate(glm::mat4(1.0f), glm::radians(-5.0f), axisRight);
+        centroid = rota * glm::vec4(centroid, 1);
+        rotationMatrix *= rota;
+        axisDir = glm::normalize(centroid - cameraTarget);
+        axisUp = glm::normalize(glm::cross(axisRight, axisDir));
+        break;
+    case GLFW_KEY_L:
+        rota = glm::rotate(glm::mat4(1.0f), glm::radians(5.0f), axisRight);
+        centroid = rota * glm::vec4(centroid, 1);
+        rotationMatrix *= rota;
+        axisDir = glm::normalize(centroid - cameraTarget);
+        axisUp = glm::normalize(glm::cross(axisRight, axisDir));
+        break;
     case GLFW_KEY_ESCAPE:
         glfwSetWindowShouldClose(window, GL_TRUE);
         break;
@@ -406,7 +442,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     }
 }
 
-void readGeoJSON(std::string filename, std::vector<Point> &vertex)
+void readGeoJSON(std::string filename, std::vector<std::vector<Point>> &vertex)
 {
     std::ifstream i(filename);
     if (i.fail())
@@ -415,44 +451,54 @@ void readGeoJSON(std::string filename, std::vector<Point> &vertex)
     }
     json j, coord;
     i >> j;
-    coord = j["features"][25]["geometry"]["coordinates"][0];
-
+    coord = j["features"][138]["geometry"]["coordinates"].get<std::vector<std::vector<Point>>>();
+    vertex.resize(coord.size());
+    vertex = coord;
+    // check if one exits
+    for (int i = 0; i < 195; i++)
+    {
+        if (j["features"][i]["geometry"]["type"].get<std::string>() == "Polygon" && j["features"][i]["geometry"]["coordinates"].get<std::vector<std::vector<std::vector<float>>>>().size() > 1)
+        {
+            std::cout << i << std::endl;
+        }
+    }
+    // coord
     // write prettified JSON to another file
     std::ofstream o("pretty.json");
-    o << std::setw(4) << j["features"][25] << std::endl;
+    o << std::setw(4) << j["features"][66] << std::endl;
 
-    for (auto &co : coord)
-    {
-        vertex.push_back({co[0].get<float>(), co[1].get<float>()});
-    }
-
+    // for (auto &co : coord)
+    // {
+    //     vertex.push_back({co[0].get<float>(), co[1].get<float>()});
+    // }
 }
-void toSphericalCoord(float lat, float lon, glm::vec3 &coord, float radius) {
+void toSphericalCoord(float lat, float lon, glm::vec3 &coord, float radius)
+{
     float lattitude = glm::radians(lat);
     float longitude = glm::radians(lon);
     float f = 0.0f;
-    float ls = atanf(pow((1 - f),2) * tanf(lattitude));
+    float ls = atanf(pow((1 - f), 2) * tanf(lattitude));
     coord.x = radius * cosf(ls) * cosf(longitude);
     coord.y = radius * cosf(ls) * sinf(longitude);
     coord.z = radius * sinf(ls);
-
 }
-void countriesRearrange(std::vector<Point> &vertex, std::vector<glm::vec3> &V, std::vector<glm::ivec3> &indices)
+void countriesRearrange(std::vector<std::vector<Point>> &vertex, std::vector<glm::vec3> &V, std::vector<glm::ivec3> &indices)
 {
-    std::vector<std::vector<Point>> polygon;
-    polygon.push_back(vertex);
-    std::vector<N> indice = mapbox::earcut<N>(polygon);
+    // std::vector<std::vector<Point>> polygon;
+    // polygon.push_back(vertex);
+    std::vector<N> indice = mapbox::earcut<N>(vertex);
     for (int i = 0; i < indice.size(); i += 3)
     {
         indices.push_back(glm::ivec3(indice[i], indice[i + 1], indice[i + 2]));
-        
     }
     for (int i = 0; i < vertex.size(); i++)
     {
-        glm::vec3 coord;
-        toSphericalCoord(vertex[i][0], vertex[i][1], coord, 1.01f);
-        V.push_back(coord);
-
+        for (j = 0; j < vertex[i].size(); j++)
+        {
+            glm::vec3 coord;
+            toSphericalCoord(vertex[i][0], vertex[i][1], coord, 1.01f);
+            V.push_back(coord);
+        }
     }
 }
 
@@ -514,6 +560,7 @@ int main(void)
 #pragma region // Read data
     readGeoJSON("../data/WB_Boundaries_GeoJSON_lowres/WB_countries_Admin0_lowres.geojson", vertices);
     countriesRearrange(vertices, VC, I);
+    centroid = std::accumulate(VC.begin(), VC.end(), glm::vec3(0));
     ImageRGB image;
     bool imageAvailable = loadPPM(image, "../data/land_shallow_topo_2048.ppm");
     if (imageAvailable)
@@ -534,13 +581,13 @@ int main(void)
 
     // Initialize the VBO with the vertices data
     VBO.init();
-     // initialize normal array buffer
+    // initialize normal array buffer
     NBO.init();
     // initialize texture array buffer
     TBO.init();
     // initialize element array buffer
     IndexBuffer.init(GL_ELEMENT_ARRAY_BUFFER);
-    
+
     sphere(1.0f, 20, 10, V, VN, T, TX);
     VBO.update(V);
     NBO.update(VN);
@@ -583,7 +630,7 @@ int main(void)
     glBindVertexArray(0);
     glUseProgram(0);
 #pragma endregion
- 
+
 #pragma region // Countries VAO and program
     VertexArrayObject VAOC;
     VAOC.init();
@@ -627,6 +674,11 @@ int main(void)
     cameraDirection = glm::normalize(cameraPos - cameraTarget);
     cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
     cameraRight = glm::normalize(glm::cross(cameraUp, cameraDirection));
+
+    // country set up
+    axisDir = glm::normalize(centroid - cameraTarget);
+    axisUp = glm::normalize(glm::cross(cameraUp, centroid));
+    axisRight = glm::normalize(glm::cross(axisUp, axisDir));
 #pragma endregion
 
     // Loop until the user closes the window
@@ -647,7 +699,7 @@ int main(void)
 
         // Enable depth test
         glEnable(GL_DEPTH_TEST);
-        #pragma region // Earth
+#pragma region // Earth
         // Bind your VAO (not necessary if you have only one)
         VAO.bind();
 
@@ -673,8 +725,8 @@ int main(void)
         glDrawElements(GL_TRIANGLES, T.size() * 3, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
         glUseProgram(0);
-        #pragma endregion
-        #pragma region // Countries rendering
+#pragma endregion
+#pragma region // Countries rendering
         VAOC.bind();
         countriesProgram.bind();
         Indexes.bind();
@@ -682,10 +734,11 @@ int main(void)
         glUniformMatrix4fv(countriesProgram.uniform("modelMatrix"), 1, GL_FALSE, glm::value_ptr(modelMatrix));
         glUniformMatrix4fv(countriesProgram.uniform("viewMatrix"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
         glUniformMatrix4fv(countriesProgram.uniform("projMatrix"), 1, GL_FALSE, glm::value_ptr(projMatrix));
+        glUniformMatrix4fv(countriesProgram.uniform("rotationMatrix"), 1, GL_FALSE, glm::value_ptr(rotationMatrix));
         glDrawElements(GL_TRIANGLES, I.size() * 3, GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
         glUseProgram(0);
-        #pragma endregion
+#pragma endregion
         // Swap front and back buffers
         glfwSwapBuffers(window);
 

@@ -24,6 +24,6 @@ void main()
         vec3(1.0) * pow(max(0.0, dot( normalize(camPos - pos), normalize( reflect(-lightDir, normal)))), lightParams.y),
         0.0, 1.0);
     
-    outColor = texture(tex, TexCoord) * vec4(col, 1);
+    outColor = texture(tex, TexCoord) * vec4(vec3(0.005), 1);
     // outColor  = vec4(triangleColor,1);
 }
