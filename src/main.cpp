@@ -444,7 +444,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
     }
 }
 
-void readGeoJSON(std::string filename, MultiPoly &vertex)
+void readGeoJSON(std::string filename, MultiPoly &vertex, int fid)
 {
     // Read file
     std::ifstream i(filename);
@@ -455,7 +455,7 @@ void readGeoJSON(std::string filename, MultiPoly &vertex)
     json j;
     i >> j;
 
-    int countryFID = 149;
+    int countryFID = fid;
     if (j["features"][countryFID]["geometry"]["type"].get<std::string>() == "Polygon")
     {
         std::vector<std::vector<Point>> coordinates = j["features"][countryFID]["geometry"]["coordinates"].get<std::vector<std::vector<Point>>>();
@@ -539,15 +539,35 @@ void countriesRearrange(MultiPoly &vertex, std::vector<glm::vec3> &V, std::vecto
         }
     }
 }
-
+int findCountryfromInitials(std::string filename, std::string initials) {
+   std::ifstream i(filename);
+    if (i.fail())
+    {
+        std::cout << "Could not open file: " << filename << std::endl;
+    }
+    json j;
+    i >> j;
+    int k = 0;
+    for (auto &country: j["features"]) {
+        if (country["properties"]["ISO_A3"].get<std::string>() == initials) {
+            return k;
+        }
+        k += 1;
+    }
+    return -1;
+}
 int main(void)
 {
 // Testing
-    int i;
-  std::cout << "Please enter an integer value: ";
-  std::cin >> i;
-  std::cout << "The value you entered is " << i;
-  std::cout << " and its double is " << i*2 << ".\n";
+    std::string initials;
+    std::cout << "Please the acronyme of the country: " << std::endl;
+    std::cin >> initials;
+    int fid = findCountryfromInitials("../data/WB_Boundaries_GeoJSON_lowres/WB_countries_Admin0_lowres.geojson", initials);
+    while (fid < 0 ) {
+        std::cout << "Acronym is incorrect. Provide a new one" << std::endl;
+        std::cin >> initials;
+        fid = findCountryfromInitials("../data/WB_Boundaries_GeoJSON_lowres/WB_countries_Admin0_lowres.geojson", initials);
+    }
 
 #pragma region // Window creation and stuff
     GLFWwindow *window;
@@ -602,7 +622,7 @@ int main(void)
 #pragma endregion
 
 #pragma region // Read data
-    readGeoJSON("../data/WB_Boundaries_GeoJSON_lowres/WB_countries_Admin0_lowres.geojson", vertices);
+    readGeoJSON("../data/WB_Boundaries_GeoJSON_lowres/WB_countries_Admin0_lowres.geojson", vertices, fid);
     countriesRearrange(vertices, VC, I);
     centroid = std::accumulate(VC.begin(), VC.end(), glm::vec3(0));
     ImageRGB image;
